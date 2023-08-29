@@ -3,11 +3,11 @@ const jwt = require('jsonwebtoken');
 let books = require("./booksdb.js");
 const regd_users = express.Router();
 
-let users = [];
+let users = [{"username":"tommy","password":"pwd123"}];
 
 const isValid = (username)=>{ //returns boolean
 //write code to check is the username is valid
-let userswithsamename = users.filter((user)=>{
+const userswithsamename = users.filter((user)=>{
   return user.username === username
 });
 if(userswithsamename.length > 0){
@@ -19,14 +19,8 @@ if(userswithsamename.length > 0){
 
 const authenticatedUser = (username,password)=>{ //returns boolean
 //write code to check if username and password match the one we have in records.
-let validusers = users.filter((user)=>{
-  return (user.username === username && user.password === password)
-});
-if(validusers.length > 0){
-  return true;
-} else {
-  return false;
-}
+const authUsers = users.filter((user) => user.username === username && user.password === password);
+return authUsers.length > 0;
 }
 
 //only registered users can login
@@ -54,27 +48,33 @@ regd_users.post("/login", (req,res) => {
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
   //Write your code here
-  // const review = req.params.review;
-  //   let book = books[reeview]
-  //   if (book) { //Check is friend exists
-  //       let DOB = req.body.DOB;
-  //       //Add similarly for firstName
-  //       //Add similarly for lastName
-  //       //if DOB the DOB has been changed, update the DOB 
-  //       if(DOB) {
-  //           friend["DOB"] = DOB
-  //       }
-  //       //Add similarly for firstName
-  //       //Add similarly for lastName
-  //       friends[email]=friend;
-  //       res.send(`Friend with the email  ${email} updated.`);
-  //   }
-  //   else{
-  //       res.send("Unable to find friend!");
-  //   }
-  return res.status(300).json({message: "Yet to be implemented"});
+  const isbn = req.params.isbn;
+  const review = req.body.review;
+  const username = req.session.authorization.username;
+  console.log("add review: ", req.params, req.body, req.session);
+  if (books[isbn]) {
+      let book = books[isbn];
+      book.reviews[username] = review;
+      return res.status(200).send("Review successfully posted");
+  }
+  else {
+      return res.status(404).json({message: `ISBN ${isbn} not found`});
+  }
+  
 });
 
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+  const isbn = req.params.isbn;
+  const username = req.session.authorization.username;
+  if (books[isbn]) {
+      let book = books[isbn];
+      delete book.reviews[username];
+      return res.status(200).send("Review successfully deleted");
+  }
+  else {
+      return res.status(404).json({message: `ISBN ${isbn} not found`});
+  }
+});
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
